@@ -9,20 +9,9 @@ var User = db.Model.extend({
     return this.hasMany(Link);
   },
   initialize: function() {
-    this.on('creating', function(model, attr, options) {
-      bcrypt.genSalt(10, function(err, salt) {
-        if (err) {
-          throw err;
-        }
-        bcrypt.hash(model.get('password'), salt, null, function(err, hash) {
-          if (err){
-            throw err;
-          }
-          debugger;
-          model.set('password', hash);
-        });
-      });
-    });
+    // this.on('creating', function(model, attr, options) {
+
+    // });
   },
   validatePassword: function(password, callback) {
     console.log('pw', this.get('password'));

@@ -30,7 +30,7 @@ app.get('/', util.checkUser, function(req, res) {
   res.render('index');
 });
 
-app.get('/create', function(req, res) {
+app.get('/create', util.checkUser, function(req, res) {
   res.render('index');
 });
 
@@ -40,7 +40,7 @@ app.get('/links', function(req, res) {
   });
 });
 
-app.post('/links', function(req, res) {
+app.post('/links', util.checkUser, function(req, res) {
   var uri = req.body.url;
 
   if (!util.isValidUrl(uri)) {
@@ -107,11 +107,13 @@ app.post('/signup', function(req, res){
     if (found){
       res.redirect('/login');
     } else {
-      var user = new User({ username: req.body.username, password: req.body.password });
-      user.save().then(function(newUser) {
-        debugger;
-        req.session.user = newUser;
-        res.redirect('/');
+      util.hashPassword(req.body.password, function(hash){
+        new User({ username: req.body.username, password: hash })
+        .save()
+        .then(function(newUser) {
+          req.session.user = newUser;
+          res.redirect('/');
+        });
       });
     }
   });
