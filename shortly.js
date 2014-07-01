@@ -15,11 +15,18 @@ app.configure(function() {
   app.set('views', __dirname + '/views');
   app.set('view engine', 'ejs');
   app.use(partials());
-  app.use(express.bodyParser())
+  app.use(express.bodyParser());
+  app.use(express.cookieParser());
+  app.use(express.session({secret:'secret'}));
   app.use(express.static(__dirname + '/public'));
 });
 
-app.get('/', function(req, res) {
+app.all('*', function(req, res, next) {
+  console.log("Request type: " + req.method + " from url: " + req.url);
+  next();
+});
+
+app.get('/', util.checkUser, function(req, res) {
   res.render('index');
 });
 
@@ -30,7 +37,7 @@ app.get('/create', function(req, res) {
 app.get('/links', function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
-  })
+  });
 });
 
 app.post('/links', function(req, res) {
@@ -70,7 +77,51 @@ app.post('/links', function(req, res) {
 // Write your authentication routes here
 /************************************************************/
 
+app.get('/login', function(req, res){
+  res.render('login');
+});
 
+app.post('/login', function(req, res){
+  new User({username: req.body.username}).fetch().then(function(found) {
+    if (found) {
+      found.validatePassword(req.body.password, function(valid) {
+        if (valid) {
+          req.session.user = found;
+          res.redirect('/');
+        } else{
+          res.redirect('/login');
+        }
+      });
+    } else {
+      res.redirect('/login');
+    }
+  });
+});
+
+app.get('/signup', function(req, res){
+  res.render('signup');
+});
+
+app.post('/signup', function(req, res){
+  new User({ username: req.body.username }).fetch().then(function(found){
+    if (found){
+      res.redirect('/login');
+    } else {
+      var user = new User({ username: req.body.username, password: req.body.password });
+      user.save().then(function(newUser) {
+        debugger;
+        req.session.user = newUser;
+        res.redirect('/');
+      });
+    }
+  });
+});
+
+app.get('/logout', function(req, res){
+  req.session.destroy(function(){
+    res.redirect('/login');
+  });
+});
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
