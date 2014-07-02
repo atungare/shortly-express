@@ -34,8 +34,8 @@ app.get('/create', util.checkUser, function(req, res) {
   res.render('index');
 });
 
-app.get('/links', function(req, res) {
-  Links.reset().fetch().then(function(links) {
+app.get('/links', util.checkUser, function(req, res) {
+  Links.reset().query({where:{user_id:req.session.user.id}}).fetch().then(function(links) {
     res.send(200, links.models);
   });
 });
@@ -57,16 +57,16 @@ app.post('/links', util.checkUser, function(req, res) {
           console.log('Error reading URL heading: ', err);
           return res.send(404);
         }
-
         var link = new Link({
           url: uri,
           title: title,
-          base_url: req.headers.origin
-        });
-
-        link.save().then(function(newLink) {
-          Links.add(newLink);
-          res.send(200, newLink);
+          base_url: req.headers.origin,
+        }).users().attach(req.session.user.id).then(function(pr) {
+        // debugger;
+          pr.save().then(function(newLink) {
+            Links.add(newLink);
+            res.send(200, newLink);
+          });
         });
       });
     }
@@ -107,13 +107,18 @@ app.post('/signup', function(req, res){
     if (found){
       res.redirect('/login');
     } else {
-      util.hashPassword(req.body.password, function(hash){
-        new User({ username: req.body.username, password: hash })
-        .save()
-        .then(function(newUser) {
-          req.session.user = newUser;
-          res.redirect('/');
-        });
+      // util.hashPassword(req.body.password, function(hash){
+      //   new User({ username: req.body.username, password: hash })
+      //   .save()
+      //   .then(function(newUser) {
+      //     req.session.user = newUser;
+      //     res.redirect('/');
+      //   });
+      // });
+      var user = new User({ username: req.body.username, password: req.body.password });
+      user.save().then(function(newUser) {
+        req.session.user = newUser;
+        res.redirect('/');
       });
     }
   });
